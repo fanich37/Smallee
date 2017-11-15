@@ -1,0 +1,85 @@
+.a-card
+	padding 0 15px
+	display block
+	
+	// +media('min', 768)
+	// 	width 33.3333%
+	// +media('mult', 767, 540)
+	// 	width 50%
+	// +media('max', 539)
+	// 	width 100%
+		
+	&:hover 
+		& ^[0]__wrapper
+			border-bottom 5px solid green
+
+		& ^[0]__img
+			transform scale(1.1)
+			
+		& ^[0]__link
+			color green
+			
+		& ^[0]__link_more
+			color green
+			
+		& ^[0]__title-wrapper:before
+			background-color green
+		
+	&__wrapper
+		padding-bottom 10px
+		height 100%
+		background-color lightgrey
+		border-bottom 5px solid main(1)
+		transition time-l
+		
+	&__img-wrapper
+		position relative
+		overflow hidden
+		
+	&__link
+		padding-bottom 4px
+		font-size 1.4em
+		line-height 1
+		text-decoration none
+		color main(1)
+		transition time-l
+		
+		&_more
+			font-size 1.2em
+			color grey
+
+	&__img
+		display block
+		size(100%, auto)
+		transition transform time-l
+		
+	&__cont-wrapper
+		padding 15px
+		
+	&__title-wrapper
+		position relative
+		&:before
+			content ''
+			position absolute
+			top 0
+			left -15px
+			size(5px, 100%)
+			background-color main(1)
+			transition time-l
+	
+	&__date	
+		display block
+		color grey
+		span
+			vertical-align middle
+			
+
+	&__preview
+		padding 10px 0
+		color grey
+		
+	&__icon
+		margin-right 4px
+		size(20px)
+		fill grey
+		vertical-align middle

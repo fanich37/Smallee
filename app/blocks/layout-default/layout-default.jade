@@ -1,0 +1,22 @@
+include /../node_modules/bemto.jade/bemto
+include ../page/page
+include ../scripts/scripts
+
+doctype html
+html(lang='ru')
+	include ../head/head
+	+page
+		include ../smallee/smallee
+		block content
+		+scripts(['app.min.js'])
+		script
+			| var smallee = new Smallee({
+			|	selector: '#test',
+			|	slidesToShow: 2,
+			|	controls: true
+			| });
+			| var smallee2 = new Smallee({
+			|	selector: '.test2',
+			|	slidesToShow: 3,
+			|	controls: true
+			| });
