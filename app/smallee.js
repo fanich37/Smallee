@@ -1,12 +1,18 @@
-;(function () {
+;(function (root, factory) {
+	if(typeof define === 'function' && define.amd) {
+		define([], factory(root));
+	} else if(typeof exports === 'object') {
+		module.exports = factory(root);
+	} else {
+		root.Smallee = factory(root);
+	}
+})(typeof global !== 'undefined' ? global : window || this.window || this.global, function (root) {
 	'use strict';
 	
 	window.Smallee = Smallee || {};
 	
 	const defaultClassess = {
 		smallee: 'smallee',
-		slider: 'smallee-slider',
-		outer: 'smallee-outer',
 		inner: 'smallee-inner',
 		slide: 'smallee-slide'
 	};
@@ -24,7 +30,8 @@
 		
 		const defaultSettings = {
 			controls: false,
-			slidesToShow: 1
+			slidesToShow: 1,
+			transition: 'ease-in-out .3s'
 		}
 
 		if (arguments[0] && typeof arguments[0] === 'object') {
@@ -33,8 +40,13 @@
 
 		init.call(this);
 		if (this.settings.controls) {
-			setNavigation.call(this);
+			this.setNavigation();
 		}
+	}
+
+	function prevDefAndStopProp(event) {
+		event.preventDefault();
+		event.stopPropagation();
 	}
 	
 	function setUserSettings(def, args) {
@@ -52,33 +64,34 @@
 
 		this.selector.classList.add(defaultClassess.smallee);
 
-		this.slider = document.createElement('DIV');
-		this.slider.classList.add(defaultClassess.slider);
-
 		this.inner = document.createElement('DIV');
 		this.inner.classList.add(defaultClassess.inner);
 		this.slides.forEach(item => {
 			this.inner.appendChild(item);
 		});
 
-		this.slider.appendChild(this.inner);
-		fragment.appendChild(this.slider);
+		fragment.appendChild(this.inner);
 
 		this.selector.appendChild(fragment);
-		setStylesToTheElements.call(_this);
+		this.setStylesToTheElements();
 	}
 	
-	function setStylesToTheElements() {
-		const sliderWidth = this.slider.clientWidth;
-		this.slider.style.overflow = 'hidden';
+	Smallee.prototype.setStylesToTheElements = function() {
+		const sliderWidth = this.selector.clientWidth;
+		
+		this.selector.style.overflow = 'hidden';
+		this.selector.style.position = 'relative';
+		
 		this.inner.style.width = `${sliderWidth * this.numberOfSlides / this.settings.slidesToShow}px`;
+		this.inner.style.transition = this.settings.transition;
+		
 		this.slides.forEach(item => {
 			item.style.float = 'left';
 			item.style.width = `${sliderWidth / this.settings.slidesToShow}px`;
 		});
 	}
 	
-	function setNavigation() {
+	Smallee.prototype.setNavigation = function() {
 		this.prev = document.createElement('A');
 		this.prev.href = '/';
 		this.prev.classList.add('smallee-prev');
@@ -87,30 +100,28 @@
 		this.next.href = '/';
 		this.next.classList.add('smallee-next');
 
-		this.slider.appendChild(this.prev);
-		this.slider.appendChild(this.next);
+		this.selector.appendChild(this.prev);
+		this.selector.appendChild(this.next);
 
 		initEvents.call(this);
 	}
 
-	// This method should makes all calculations
-	Smallee.prototype.calculateDimensions() {
-
-	}
-	
-	// It should be reconsider...
 	Smallee.prototype.moveSlides = function(event) {
 		const translate = this.inner.style.transform;
-		this.pace = 100 / this.numberOfSlides;
-		this.wasMovedOn = translate ? Number(translate.slice(translate.indexOf('(') + 1, translate.indexOf('%'))) : 0;
-		this.limit = (event.target.className === 'smallee-prev') ? 0 : 100 - ((100 / this.numberOfSlides) * (this.settings.slidesToShow));
-		if (event.target.className === 'smallee-prev') {
-			this.moveTo = (this.wasMovedOn === Math.round(this.limit * 100) / 100) ? this.limit : this.wasMovedOn + this.pace;
-		}else {
-			console.log(this.limit);
-			this.moveTo = (this.wasMovedOn === -(Math.round(this.limit * 100) / 100)) ? -this.limit : this.wasMovedOn - this.pace;
+		this.stepRange = this.selector.clientWidth / this.settings.slidesToShow;
+		this.wasMovedOn = translate ? Number(translate.slice(translate.indexOf('(') + 1, translate.indexOf('p'))) : 0;
+		
+		this.limit = -((this.numberOfSlides - this.settings.slidesToShow) * this.stepRange);
+		
+		this.nextStep = this.wasMovedOn - this.stepRange >= this.limit ? this.wasMovedOn - this.stepRange : this.limit;
+		this.prevStep = this.wasMovedOn + this.stepRange > 0 ? 0 : this.wasMovedOn + this.stepRange;
+		
+		if (event.target.className === 'smallee-next') {
+			this.inner.style.transform = `translate3d(${this.nextStep}px, 0, 0)`;
 		}
-		this.inner.style.transform = `translate3d(${Math.round(this.moveTo * 100) / 100}%, 0, 0)`;
+		if (event.target.className === 'smallee-prev') {
+			this.inner.style.transform = `translate3d(${this.prevStep}px, 0, 0)`;
+		}
 	}
 
 	function initEvents() {
@@ -124,9 +135,7 @@
 			_this.moveSlides(event);
 		});
 	}
-	
-	function prevDefAndStopProp(event) {
-		event.preventDefault();
-		event.stopPropagation();
-	}
-})();
+
+	return Smallee;
+
+});
