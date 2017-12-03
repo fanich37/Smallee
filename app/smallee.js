@@ -146,21 +146,22 @@
 		}
 	}
 
-	Smallee.prototype.dragSlides = function(isDown, isMoving, startPoint) {
-		const stepRange = this.defineTheStepRange();
-		const wasMovedOn = this.defineSmalleeWasTranslatedOn();
+	Smallee.prototype.dragSlides = function(isDown, isMoving, startPoint, wasTranslated) {
+		// const stepRange = this.defineTheStepRange();
 		const limit = this.defineTheLimit();
 
 		if (isDown && isMoving) {
-			if (event.clientX < startPoint) {
-				const nextStep = wasMovedOn + (event.clientX - startPoint);
-				console.log(nextStep);
-				// this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
-				// this.setControlsState();
-			}else {
-				const nextStep = wasMovedOn - (startPoint - event.clientX);
-			}
+			this.inner.style.transform = `translate3d(${wasTranslated - (startPoint - event.clientX)}px, 0, 0)`;
+			this.setControlsState();	
 		}
+	}
+
+	Smallee.prototype.clearTransition = function() {
+		this.inner.style.transition = '0s';
+	}
+
+	Smallee.prototype.restoreTransition = function() {
+		this.inner.style.transition = this.settings.transition;
 	}
 
 	function setNavigation() {
@@ -196,23 +197,34 @@
 		const _this = this;
 		let isDown = false;
 		let isMoving = false;
-		let startPoint = 0;
+		let startPoint = null;
+		let wasTranslated = null;
 		
 		this.inner.addEventListener('mousedown', function (event) {
+			wasTranslated = _this.defineSmalleeWasTranslatedOn();
 			isDown = true;
 			startPoint = event.clientX;
-			_this.dragSlides(isDown, isMoving, event.clientX);
+			_this.clearTransition();
+			_this.dragSlides(isDown, isMoving, event.clientX, wasTranslated);
 		});
 
 		this.inner.addEventListener('mousemove', function () {
 			isMoving = true;
-			_this.dragSlides(isDown, isMoving, startPoint);
+			_this.dragSlides(isDown, isMoving, startPoint, wasTranslated);
 		});
 
 		this.inner.addEventListener('mouseup', function () {
 			isDown = false;
 			isMoving = false;
-			_this.dragSlides(isDown, isMoving);
+			_this.dragSlides(isDown, isMoving, 0, 0);
+			_this.restoreTransition();
+		});
+
+		this.inner.addEventListener('mouseleave', function () {
+			isDown = false;
+			isMoving = false;
+			_this.dragSlides(isDown, isMoving, 0, 0);
+			_this.restoreTransition();
 		});
 	}
 
