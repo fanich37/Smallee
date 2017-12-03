@@ -4,18 +4,13 @@
 .smallee
 	padding 40px 0
 	display block
-		
-	&-slider
-		position relative
-		margin 0 auto
-		// padding 0 15px
-		// +media('min', 768)
-		// 	width 750px
-		// +media('min', 992)
-		// 	width 970px
-		// +media('min', 1200)
-		// 	width 1170px
-		
+	
+	&-inner:after
+		content ''
+		display table
+		width 0
+		clear both
+
 	&-next,
 	&-prev
 		position absolute
@@ -27,42 +22,65 @@
 		height 50px 
 		background-color #fff
 		border-radius 50%
-		box-shadow bs-down
+		box-shadow 0 2px 2px 2px rgba(0, 0, 0, .5)
 		transition time-s
-		
-		// +media('max', 539)
-		// 	size(40px)
-		
+
 	&-prev
 		left 30px
+		&:before
+			content ''
+			position absolute
+			display block
+			top 15px
+			left 10px
+			width 25px
+			height 4px
+			background-color black
+			transform rotate(-45deg)
+		&:after
+			content ''
+			position absolute
+			top 30px
+			left 10px
+			display block
+			width 25px
+			height 4px
+			background-color black
+			transform rotate(45deg)
 			
+		&_disabled
+			opacity .5
+
 	&-next
 		right 30px
-			
-	&_disabled
-		visibility hidden
-		opacity 0
-		
-	&-icon-arrow
-		// size(30px)
-		fill green
-		// +media('max', 539)
-		// 	size(20px)
-		
-		&_left
-			transform rotate(180deg)
-			
+		&:before
+			content ''
+			position absolute
+			display block
+			top 15px
+			right 10px
+			width 25px
+			height 4px
+			background-color black
+			transform rotate(45deg)
+		&:after
+			content ''
+			position absolute
+			top 30px
+			right 10px
+			display block
+			width 25px
+			height 4px
+			background-color black
+			transform rotate(-45deg)
+
+		&_disabled
+			opacity .5
+
 .a-card
 	padding 0 15px
 	display block
 	
-	// +media('min', 768)
-	// 	width 33.3333%
-	// +media('mult', 767, 540)
-	// 	width 50%
-	// +media('max', 539)
-	// 	width 100%
-		
 	&:hover 
 		& ^[0]__wrapper
 			border-bottom 5px solid green
@@ -121,7 +139,7 @@
 			size(5px, 100%)
 			background-color main(1)
 			transition .7s
-	
+
 	&__date	
 		display block
 		color grey
