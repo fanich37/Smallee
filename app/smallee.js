@@ -11,7 +11,7 @@
 	
 	window.Smallee = Smallee || {};
 	
-	const defaultClassess = {
+	const defaultClasses = {
 		smallee: 'smallee',
 		inner: 'smallee-inner',
 		slide: 'smallee-slide',
@@ -22,9 +22,9 @@
 	};
 	
 	function Smallee(object) {
-		if (object.selector[0] === '#') {
+		if (object.selector.charAt(0) === '#') {
 			this.selector = document.getElementById(object.selector.substr(1));
-		}else if (object.selector[0] === '.') {
+		}else if (object.selector.charAt(0) === '.') {
 			this.selector = document.getElementsByClassName(object.selector.substr(1))[0];
 		}else {
 			throw new Error('It seems that you forgot css-selectors :-)');
@@ -44,13 +44,9 @@
 			this.settings = setUserSettings(defaultSettings, arguments[0]);
 		}
 
-		init.call(this);
-		if (this.settings.controls) {
-			setNavigation.call(this);
-		}
-		if (this.settings.draggable) {
-			initDragEvents.call(this);
-		}
+		['moveSlides', 'mouseDown', 'mouseUp', 'mouseMove', 'preventClick'].forEach(method => { this[method] = this[method].bind(this); });
+
+		this.init();
 	}
 
 	function prevDefAndStopProp(event) {
@@ -67,14 +63,14 @@
 		return def;
 	}
 	
-	function init() {
+	Smallee.prototype.init = function() {
 		const _this = this;
 		const fragment = document.createDocumentFragment();
 
-		this.selector.classList.add(defaultClassess.smallee);
+		this.selector.classList.add(defaultClasses.smallee);
 
 		this.inner = document.createElement('DIV');
-		this.inner.classList.add(defaultClassess.inner);
+		this.inner.classList.add(defaultClasses.inner);
 		this.slides.forEach((item, i) => {
 			item.setAttribute('data-index', i);
 			this.inner.appendChild(item);
@@ -84,6 +80,18 @@
 
 		this.selector.appendChild(fragment);
 		this.setStylesToTheElements();
+
+		if (this.settings.controls) {
+			this.setNavigation();
+		}
+		if (this.settings.draggable) {
+			this.isDown = false;
+			this.dragCoords = {
+				start: null,
+				wasMovedOn: null
+			};
+			this.initDragEvents();
+		}
 	}
 	
 	Smallee.prototype.setStylesToTheElements = function() {
@@ -103,15 +111,15 @@
 
 	Smallee.prototype.setControlsState = function() {
 		if (this.defineSmalleeWasTranslatedOn() === this.defineTheLimit()) {
-			this.next.classList.add(defaultClassess.nextDisabled);
+			this.next.classList.add(defaultClasses.nextDisabled);
 		}else {
-			this.next.classList.remove(defaultClassess.nextDisabled);
+			this.next.classList.remove(defaultClasses.nextDisabled);
 		}
 
 		if (this.defineSmalleeWasTranslatedOn() === 0) {
-			this.prev.classList.add(defaultClassess.prevDisabled);
+			this.prev.classList.add(defaultClasses.prevDisabled);
 		}else {
-			this.prev.classList.remove(defaultClassess.prevDisabled);
+			this.prev.classList.remove(defaultClasses.prevDisabled);
 		}
 	}
 
@@ -128,32 +136,24 @@
 		return translate ? Number(translate.slice(translate.indexOf('(') + 1, translate.indexOf('p'))) : 0;
 	}
 
-	Smallee.prototype.moveSlides = function(event) {
+	Smallee.prototype.nextSlide = function(event) {
 		const stepRange = this.defineTheStepRange();
 		const wasMovedOn = this.defineSmalleeWasTranslatedOn();
 		const limit = this.defineTheLimit();
-		
 		const nextStep = wasMovedOn - stepRange >= limit ? wasMovedOn - stepRange : limit;
-		const prevStep = wasMovedOn + stepRange > 0 ? 0 : wasMovedOn + stepRange;
 		
-		if (event.target.className === 'smallee-next') {
-			this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
-			this.setControlsState();
-		}
-		if (event.target.className === 'smallee-prev') {
-			this.inner.style.transform = `translate3d(${prevStep}px, 0, 0)`;
-			this.setControlsState();
-		}
+		this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
+		this.setControlsState();
 	}
 
-	Smallee.prototype.dragSlides = function(isDown, isMoving, startPoint, wasTranslated) {
-		// const stepRange = this.defineTheStepRange();
+	Smallee.prototype.prevSlide = function(event) {
+		const stepRange = this.defineTheStepRange();
+		const wasMovedOn = this.defineSmalleeWasTranslatedOn();
 		const limit = this.defineTheLimit();
-
-		if (isDown && isMoving) {
-			this.inner.style.transform = `translate3d(${wasTranslated - (startPoint - event.clientX)}px, 0, 0)`;
-			this.setControlsState();	
-		}
+		const prevStep = wasMovedOn + stepRange > 0 ? 0 : wasMovedOn + stepRange;
+		
+		this.inner.style.transform = `translate3d(${prevStep}px, 0, 0)`;
+		this.setControlsState();
 	}
 
 	Smallee.prototype.clearTransition = function() {
@@ -164,68 +164,69 @@
 		this.inner.style.transition = this.settings.transition;
 	}
 
-	function setNavigation() {
+	Smallee.prototype.setNavigation = function() {
 		this.prev = document.createElement('BUTTON');
-		this.prev.href = '/';
-		this.prev.classList.add('smallee-prev');
+		this.prev.type = 'button';
+		this.prev.classList.add(defaultClasses.prev);
 
 		this.next = document.createElement('BUTTON');
-		this.next.href = '/';
-		this.next.classList.add('smallee-next');
+		this.next.type = 'button';
+		this.next.classList.add(defaultClasses.next);
 
 		this.selector.appendChild(this.prev);
 		this.selector.appendChild(this.next);
 
-		initMainEvents.call(this);
+		this.initClickEvents();
 		this.setControlsState();
 	}
 
-	function initMainEvents() {
-		const _this = this;
-		
-		this.prev.addEventListener('click', function (event) {
-			prevDefAndStopProp(event);
-			_this.moveSlides(event);
-		});
-		this.next.addEventListener('click', function (event) {
-			prevDefAndStopProp(event);
-			_this.moveSlides(event);
-		});
+	Smallee.prototype.moveSlides = function() {
+		if (event.target.closest(defaultClasses.next)) {
+			this.nextSlide();
+		}
+		if (event.target.closest(defaultClasses.prev)) {
+			this.prevSlide();
+		}
 	}
 
-	function initDragEvents() {
-		const _this = this;
-		let isDown = false;
-		let isMoving = false;
-		let startPoint = null;
-		let wasTranslated = null;
-		
-		this.inner.addEventListener('mousedown', function (event) {
-			wasTranslated = _this.defineSmalleeWasTranslatedOn();
-			isDown = true;
-			startPoint = event.clientX;
-			_this.clearTransition();
-			_this.dragSlides(isDown, isMoving, event.clientX, wasTranslated);
-		});
+	Smallee.prototype.preventClick = function(event) {
+		if (event.target.closest('a')) {
+			prevDefAndStopProp(event);
+		}
+	}
 
-		this.inner.addEventListener('mousemove', function () {
-			isMoving = true;
-			_this.dragSlides(isDown, isMoving, startPoint, wasTranslated);
-		});
+	Smallee.prototype.initClickEvents = function(event) {
+		this.selector.addEventListener('click', this.moveSlides);
+	}
 
-		this.inner.addEventListener('mouseup', function () {
-			isDown = false;
-			isMoving = false;
-			_this.dragSlides(isDown, isMoving, 0, 0);
-			_this.restoreTransition();
-		});
+	Smallee.prototype.setInnerInProperPositionAfterDrag = function() {
 
-		this.inner.addEventListener('mouseleave', function () {
-			isDown = false;
-			isMoving = false;
-			_this.dragSlides(isDown, isMoving, 0, 0);
-			_this.restoreTransition();
-		});
+	}
+
+	Smallee.prototype.mouseDown = function(event) {
+		this.isDown = true;
+		this.dragCoords.start = event.clientX;
+		this.dragCoords.wasMovedOn = this.defineSmalleeWasTranslatedOn();
+		this.clearTransition();
+	}
+
+	Smallee.prototype.mouseUp = function() {
+		this.isDown = false;
+		this.dragCoords.start = null;
+		this.dragCoords.wasMovedOn = null;
+		this.restoreTransition();
+	}
+
+	Smallee.prototype.mouseMove = function(event) {
+		if (this.isDown) {
+			this.inner.style.transform = `translate3d(${this.dragCoords.wasMovedOn + event.clientX - this.dragCoords.start}px, 0, 0)`;
+		}
+	}
+	
+	Smallee.prototype.initDragEvents = function() {
+		this.inner.addEventListener('mousedown', this.mouseDown);
+		this.inner.addEventListener('mouseup', this.mouseUp);
+		this.inner.addEventListener('mousemove', this.mouseMove);
 	}
 
 	return Smallee;
