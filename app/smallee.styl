@@ -4,10 +4,10 @@
 .smallee
 	padding 40px 0
 	display block
-	
+
 	&-inner 
 		user-select none
-	
+
 		&:after
 			content ''
 			display table
@@ -29,7 +29,7 @@
 		box-shadow 0 2px 2px 2px rgba(0, 0, 0, .5)
 		transition time-s
 		cursor pointer
-	
+
 	&_disabled
 		opacity .5
 		cursor default
@@ -39,7 +39,7 @@
 
 		&_disabled
 			display none
-	
+
 	&-prev
 		left 30px
 
@@ -58,7 +58,7 @@
 			width 25px
 			height 4px
 			background-color black
-		
+
 	&-next
 		&:before
 			transform rotate(45deg) translate3d(0, 4px, 0)
@@ -66,7 +66,7 @@
 		&:after
 			transform rotate(-45deg) translate3d(0, -4px, 0)
 			transform-origin top right
-		
+
 	&-prev
 		&:before
 			transform rotate(-45deg) translate3d(0, 4px, 0)

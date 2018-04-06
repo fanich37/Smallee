@@ -38,7 +38,8 @@
 			slidesToScroll: 1,
 			effect: 'default', // also 'fade' is available
 			swipeable: false,
-			transition: 'ease-in-out .3s',
+			easeFunc: 'ease-in-out', // can be any transition function
+			delay: 300,
 			threshold: 100
 		}
 
@@ -46,7 +47,9 @@
 			this.settings = setUserSettings(defaultSettings, arguments[0]);
 		}
 
-		['nextSlide', 'prevSlide', 'moveSlides', 'mouseDown', 'mouseUp', 'mouseMove', 'mouseLeave', 'transitionEnd', 'restoreOpacity', 'preventDragStart'].forEach(method => { this[method] = this[method].bind(this); });
+		this.settings.transition = `${this.settings.easeFunc} .${this.settings.delay / 100}s`;
+
+		['changeSlide', 'moveSlides', 'mouseDown', 'mouseUp', 'mouseMove', 'mouseLeave', 'preventDragStart'].forEach(method => { this[method] = this[method].bind(this); });
 
 		this.init();
 	}
@@ -95,9 +98,6 @@
 			this.isDown = false;
 			this.initSwipeEvents();
 		}
-		if (this.settings.effect === 'fade') {
-			this.transitionEnd();
-		}
 	}
 	
 	Smallee.prototype.setStylesToTheElements = function() {
@@ -107,7 +107,15 @@
 		this.selector.style.position = 'relative';
 		
 		this.inner.style.width = `${sliderWidth * this.numberOfSlides / this.settings.slidesToShow}px`;
-		this.inner.style.transition = this.settings.transition;
+		switch (this.settings.effect) {
+			case 'fade':
+				this.slides.forEach((item, i) => {
+					item.style.transition = this.settings.transition;
+				});
+				break;
+			default:
+				this.inner.style.transition = this.settings.transition;
+		}
 		
 		this.slides.forEach(item => {
 			item.style.float = 'left';
@@ -150,59 +158,41 @@
 		return translate ? Number(translate.slice(translate.indexOf('(') + 1, translate.indexOf('p'))) : 0;
 	}
 
-	Smallee.prototype.nextSlide = function(event) {
-		const limit = this.scrollLimit;
-		const nextStep = this.sliderCoords.wasMovedOn - this.stepRange >= limit ? this.sliderCoords.wasMovedOn - this.stepRange : limit;
+	Smallee.prototype.changeSlide = function(direction) {
+		let nextStep;
+		switch (direction) {
+			case 'next':
+				nextStep = this.sliderCoords.wasMovedOn - this.stepRange >= this.scrollLimit ? this.sliderCoords.wasMovedOn - this.stepRange : this.scrollLimit;		
+				break;
+			case 'prev':
+				nextStep = this.sliderCoords.wasMovedOn + this.stepRange > 0 ? 0 : this.sliderCoords.wasMovedOn + this.stepRange;
+				break;
+			default:
+				return;
+
+		}
 		
 		switch (this.settings.effect) {
 			case 'fade':
 				const _this = this;
-				this.inner.style.opacity = 0;
-				const timer1 = setTimeout(function(){
+				this.slides.forEach(item => {
+					item.style.opacity = 0;
+				});
+				const timer = setTimeout(function(){
 					_this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
-					clearInterval(timer1);
-				}, 300);
-				const timer2 = setTimeout(function(){
-					_this.inner.style.opacity = 1;
+					_this.slides.forEach(item => {
+						item.style.opacity = 1;
+					});
 					_this.setControlsState();
-					clearInterval(timer2);
-				}, 600);
+					clearInterval(timer);
+				}, this.settings.delay);
+				
 				break;
 			default:
 				this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
+				this.restoreTransition();
 				this.setControlsState();
 		}
-	}
-
-	Smallee.prototype.transitionEnd = function() {
-		// this.inner.addEventListener('transitionend', this.restoreOpacity, false);
-	}
-	
-	Smallee.prototype.restoreOpacity = function(event) {
-		// this.inner.style.opacity = 1;
-	}
-
-	Smallee.prototype.prevSlide = function(event) {
-		const prevStep = this.sliderCoords.wasMovedOn + this.stepRange > 0 ? 0 : this.sliderCoords.wasMovedOn + this.stepRange;
-		
-		switch (this.settings.effect) {
-			case 'fade':
-				const _this = this;	
-				this.inner.style.opacity = 0;
-				const timer1 = setTimeout(function(){
-					_this.inner.style.transform = `translate3d(${prevStep}px, 0, 0)`;
-					clearInterval(timer1);
-				}, 300);
-				const timer2 = setTimeout(function(){
-					_this.inner.style.opacity = 1;
-					_this.setControlsState();
-					clearInterval(timer2);
-				}, 600);
-				break;
-			default:
-				this.inner.style.transform = `translate3d(${prevStep}px, 0, 0)`;
-		}
-		this.setControlsState();
 	}
 
 	Smallee.prototype.clearTransition = function() {
@@ -216,10 +206,10 @@
 	Smallee.prototype.moveSlides = function() {
 		this.sliderCoords.wasMovedOn = this.defineSmalleeWasTranslatedOn();
 		if (event.target.closest(`.${defaultClasses.next}`)) {
-			this.nextSlide();
+			this.changeSlide('next');
 		}
 		if (event.target.closest(`.${defaultClasses.prev}`)) {
-			this.prevSlide();
+			this.changeSlide('prev');
 		}
 	}
 
@@ -236,20 +226,19 @@
 
 	Smallee.prototype.mouseUp = function() {
 		this.isDown = false;
-		this.restoreTransition();
 		if (event.clientX - this.sliderCoords.start < -this.settings.threshold) {
-			this.nextSlide();
+			this.changeSlide('next');
 			return;
 		}
 		if (event.clientX - this.sliderCoords.start > this.settings.threshold) {
-			this.prevSlide();
+			this.changeSlide('prev');
 			return;
 		}
 		this.inner.style.transform = `translate3d(${this.sliderCoords.wasMovedOn}px, 0, 0)`;
 	}
 
 	Smallee.prototype.mouseMove = function(event) {
-		if (this.isDown) {
+		if (this.isDown && this.settings.effect !== 'fade') {
 			this.inner.style.transform = `translate3d(${this.sliderCoords.wasMovedOn + event.clientX - this.sliderCoords.start}px, 0, 0)`;
 		}
 	}
@@ -259,11 +248,11 @@
 			this.isDown = false;
 			this.restoreTransition();
 			if (event.clientX - this.sliderCoords.start < -this.settings.threshold) {
-				this.nextSlide();
+				this.changeSlide('next');
 				return;
 			}
 			if (event.clientX - this.sliderCoords.start > this.settings.threshold) {
-				this.prevSlide();
+				this.changeSlide('prev');
 				return;
 			}
 			this.inner.style.transform = `translate3d(${this.sliderCoords.wasMovedOn}px, 0, 0)`;
