@@ -78,10 +78,18 @@
 		fill grey
 		vertical-align middle
 		
-#test
-	margin 0 auto
-	width 800px
-	
+#test,
 .test2
 	margin 0 auto
-	width 800px
+
+	@media screen and (min-width: 1200px)
+		width 1170px
+
+	@media screen and (max-width: 1199px) and (min-width: 992px)
+		width 970px
+
+	@media screen and (max-width: 991px) and (min-width: 768px)
+		width 750px
+
+	@media screen and (max-width: 767px)
+		width auto

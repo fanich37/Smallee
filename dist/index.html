@@ -264,8 +264,15 @@
             slidesToShow: 3,
             slidesToScroll: 2,
             controls: true,
-            effect: 'fade',
-            swipeable: true
+            swipeable: true,
+            responsive: {
+                1199: {
+                    slidesToShow: 2
+                },
+                991: {
+                    slidesToShow: 1
+                }
+            }
         });
         var smallee2 = new Smallee({
             selector: '.test2',

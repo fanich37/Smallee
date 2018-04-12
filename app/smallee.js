@@ -20,18 +20,8 @@
 		prevDisabled: 'smallee-prev_disabled',
 		nextDisabled: 'smallee-next_disabled'
 	};
-	
+
 	function Smallee(object) {
-		if (object.selector.charAt(0) === '#') {
-			this.selector = document.getElementById(object.selector.substr(1));
-		}else if (object.selector.charAt(0) === '.') {
-			this.selector = document.getElementsByClassName(object.selector.substr(1))[0];
-		}else {
-			throw new Error('It seems that you forgot css-selectors :-)');
-		}
-		this.slides = Array.prototype.slice.call(this.selector.children);
-		this.numberOfSlides = this.slides.length;
-		
 		const defaultSettings = {
 			controls: false,
 			slidesToShow: 1,
@@ -40,8 +30,13 @@
 			swipeable: false,
 			easeFunc: 'ease-in-out', // can be any transition function
 			delay: 300,
-			threshold: 100
+			threshold: 100,
+			responsive: false
 		}
+	
+		this.selector = document.querySelector(object.selector);
+		this.slides = Array.prototype.slice.call(this.selector.children);
+		this.numberOfSlides = this.slides.length;
 
 		if (arguments[0] && typeof arguments[0] === 'object') {
 			this.settings = setUserSettings(defaultSettings, arguments[0]);
@@ -49,7 +44,7 @@
 
 		this.settings.transition = `${this.settings.easeFunc} .${this.settings.delay / 100}s`;
 
-		['changeSlide', 'moveSlides', 'mouseDown', 'mouseUp', 'mouseMove', 'mouseLeave', 'preventDragStart'].forEach(method => { this[method] = this[method].bind(this); });
+		['changeSlide', 'moveSlides', 'mouseDown', 'mouseUp', 'mouseMove', 'mouseLeave', 'preventDragStart', 'doOnResize'].forEach(method => { this[method] = this[method].bind(this); });
 
 		this.init();
 	}
@@ -70,6 +65,10 @@
 	
 	Smallee.prototype.init = function() {
 		const fragment = document.createDocumentFragment();
+		this.sliderCoords = {
+			start: null,
+			wasMovedOn: null
+		};
 
 		this.selector.classList.add(defaultClasses.smallee);
 
@@ -86,10 +85,6 @@
 		this.setStylesToTheElements();
 		this.stepRange = (this.selector.clientWidth / this.settings.slidesToShow) * this.settings.slidesToScroll;
 		this.scrollLimit = -((this.numberOfSlides - this.settings.slidesToShow) * (this.stepRange / this.settings.slidesToScroll));
-		this.sliderCoords = {
-			start: null,
-			wasMovedOn: null
-		};
 
 		if (this.settings.controls) {
 			this.setNavigation();
@@ -97,6 +92,29 @@
 		if (this.settings.swipeable) {
 			this.isDown = false;
 			this.initSwipeEvents();
+		}
+		if (this.settings.responsive) {
+			this.resizeHandler();
+		}
+	}
+
+	Smallee.prototype.doOnResize = function(mediaQueryList) {
+		if (mediaQueryList.matches) {
+			const sliderWidth = this.selector.clientWidth;
+			this.stepRange = (this.selector.clientWidth / this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow) * this.settings.slidesToScroll;
+			this.scrollLimit = -((this.numberOfSlides - this.settings.slidesToShow) * (this.stepRange / this.settings.slidesToScroll));
+			this.inner.style.width = `${sliderWidth * this.numberOfSlides / this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow}px`;
+			this.slides.forEach(item => {
+				item.style.width = `${sliderWidth / this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow}px`;
+			});
+		}
+	}
+
+	Smallee.prototype.resizeHandler = function() {
+		const mql = {};
+		for (const breakpoint in this.settings.responsive) {
+			mql[breakpoint] = window.matchMedia(`(max-width: ${breakpoint}px)`);
+			mql[breakpoint].addListener(this.doOnResize);
 		}
 	}
 	
@@ -186,7 +204,6 @@
 					_this.setControlsState();
 					clearInterval(timer);
 				}, this.settings.delay);
-				
 				break;
 			default:
 				this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
@@ -234,6 +251,7 @@
 			this.changeSlide('prev');
 			return;
 		}
+		this.restoreTransition();
 		this.inner.style.transform = `translate3d(${this.sliderCoords.wasMovedOn}px, 0, 0)`;
 	}
 
