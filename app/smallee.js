@@ -33,13 +33,14 @@
 			threshold: 100,
 			responsive: false
 		}
-	
-		this.selector = document.querySelector(object.selector);
-		this.slides = Array.prototype.slice.call(this.selector.children);
-		this.numberOfSlides = this.slides.length;
-
-		if (arguments[0] && typeof arguments[0] === 'object') {
-			this.settings = setUserSettings(defaultSettings, arguments[0]);
+		
+		if (typeof object === 'object' && Number(object) !== 0) {
+			this.selector = document.querySelector(object.selector);
+			this.slides = Array.prototype.slice.call(this.selector.children);
+			this.numberOfSlides = this.slides.length;
+			this.settings = setUserSettings(defaultSettings, object);
+		}else {
+			throw new Error('You must pass the object as an argument!');
 		}
 
 		this.settings.transition = `${this.settings.easeFunc} .${this.settings.delay / 100}s`;
