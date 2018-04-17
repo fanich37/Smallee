@@ -45,7 +45,16 @@
 
 		this.settings.transition = `${this.settings.easeFunc} .${this.settings.delay / 100}s`;
 
-		['changeSlide', 'moveSlides', 'mouseDown', 'mouseUp', 'mouseMove', 'mouseLeave', 'preventDragStart', 'doOnResize'].forEach(method => { this[method] = this[method].bind(this); });
+		[
+			'changeSlidesPosition',
+			'moveSlides',
+			'mouseDown',
+			'mouseUp',
+			'mouseMove',
+			'mouseLeave',
+			'preventDragStart',
+			'doOnResize'
+		].forEach(method => { this[method] = this[method].bind(this); });
 
 		this.init();
 	}
@@ -68,7 +77,7 @@
 		const fragment = document.createDocumentFragment();
 		this.sliderCoords = {
 			start: null,
-			wasMovedOn: null
+			wasMovedOn: 0
 		};
 
 		this.selector.classList.add(defaultClasses.smallee);
@@ -142,20 +151,6 @@
 		});
 	}
 
-	Smallee.prototype.setControlsState = function() {
-		if (this.defineSmalleeWasTranslatedOn() === this.scrollLimit) {
-			this.next.classList.add(defaultClasses.nextDisabled);
-		}else {
-			this.next.classList.remove(defaultClasses.nextDisabled);
-		}
-
-		if (this.defineSmalleeWasTranslatedOn() === 0) {
-			this.prev.classList.add(defaultClasses.prevDisabled);
-		}else {
-			this.prev.classList.remove(defaultClasses.prevDisabled);
-		}
-	}
-
 	Smallee.prototype.setNavigation = function() {
 		this.prev = document.createElement('BUTTON');
 		this.prev.type = 'button';
@@ -172,16 +167,31 @@
 		this.setControlsState();
 	}
 
+	Smallee.prototype.setControlsState = function() {
+		if (this.sliderCoords.wasMovedOn === this.scrollLimit) {
+			this.next.classList.add(defaultClasses.nextDisabled);
+		}else {
+			this.next.classList.remove(defaultClasses.nextDisabled);
+		}
+
+		if (this.sliderCoords.wasMovedOn === 0) {
+			this.prev.classList.add(defaultClasses.prevDisabled);
+		}else {
+			this.prev.classList.remove(defaultClasses.prevDisabled);
+		}
+	}
+
 	Smallee.prototype.defineSmalleeWasTranslatedOn = function() {
 		const translate = this.inner.style.transform;
+		console.log('1');
 		return translate ? Number(translate.slice(translate.indexOf('(') + 1, translate.indexOf('p'))) : 0;
 	}
 
-	Smallee.prototype.changeSlide = function(direction) {
+	Smallee.prototype.changeSlidesPosition = function(direction) {
 		let nextStep;
 		switch (direction) {
 			case 'next':
-				nextStep = this.sliderCoords.wasMovedOn - this.stepRange >= this.scrollLimit ? this.sliderCoords.wasMovedOn - this.stepRange : this.scrollLimit;		
+				nextStep = this.sliderCoords.wasMovedOn - this.stepRange >= this.scrollLimit ? this.sliderCoords.wasMovedOn - this.stepRange : this.scrollLimit;
 				break;
 			case 'prev':
 				nextStep = this.sliderCoords.wasMovedOn + this.stepRange > 0 ? 0 : this.sliderCoords.wasMovedOn + this.stepRange;
@@ -190,7 +200,6 @@
 				return;
 
 		}
-		
 		switch (this.settings.effect) {
 			case 'fade':
 				const _this = this;
@@ -202,12 +211,14 @@
 					_this.slides.forEach(item => {
 						item.style.opacity = 1;
 					});
+					_this.sliderCoords.wasMovedOn = _this.defineSmalleeWasTranslatedOn();
 					_this.setControlsState();
 					clearInterval(timer);
 				}, this.settings.delay);
 				break;
 			default:
 				this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
+				this.sliderCoords.wasMovedOn = this.defineSmalleeWasTranslatedOn();
 				this.restoreTransition();
 				this.setControlsState();
 		}
@@ -222,12 +233,11 @@
 	}
 
 	Smallee.prototype.moveSlides = function() {
-		this.sliderCoords.wasMovedOn = this.defineSmalleeWasTranslatedOn();
 		if (event.target.closest(`.${defaultClasses.next}`)) {
-			this.changeSlide('next');
+			this.changeSlidesPosition('next');
 		}
 		if (event.target.closest(`.${defaultClasses.prev}`)) {
-			this.changeSlide('prev');
+			this.changeSlidesPosition('prev');
 		}
 	}
 
@@ -238,18 +248,17 @@
 	Smallee.prototype.mouseDown = function(event) {
 		this.isDown = true;
 		this.sliderCoords.start = event.clientX;
-		this.sliderCoords.wasMovedOn = this.defineSmalleeWasTranslatedOn();
 		this.clearTransition();
 	}
 
 	Smallee.prototype.mouseUp = function() {
 		this.isDown = false;
 		if (event.clientX - this.sliderCoords.start < -this.settings.threshold) {
-			this.changeSlide('next');
+			this.changeSlidesPosition('next');
 			return;
 		}
 		if (event.clientX - this.sliderCoords.start > this.settings.threshold) {
-			this.changeSlide('prev');
+			this.changeSlidesPosition('prev');
 			return;
 		}
 		this.restoreTransition();
@@ -267,11 +276,11 @@
 			this.isDown = false;
 			this.restoreTransition();
 			if (event.clientX - this.sliderCoords.start < -this.settings.threshold) {
-				this.changeSlide('next');
+				this.changeSlidesPosition('next');
 				return;
 			}
 			if (event.clientX - this.sliderCoords.start > this.settings.threshold) {
-				this.changeSlide('prev');
+				this.changeSlidesPosition('prev');
 				return;
 			}
 			this.inner.style.transform = `translate3d(${this.sliderCoords.wasMovedOn}px, 0, 0)`;
