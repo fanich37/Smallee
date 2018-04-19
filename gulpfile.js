@@ -30,7 +30,7 @@ gulp.task('default', () =>
 );
 
 gulp.task('styles', () => (
-	gulp.src('app/*.styl')
+	gulp.src('src/*.styl')
 		.pipe(plumber())
 		.pipe(gulpIf(isDebug, sourcemaps.init()))
 		.pipe(stylus())
@@ -53,7 +53,7 @@ gulp.task('styles', () => (
 ));
 
 gulp.task('scripts', () => {
-	gulp.src('app/*.js')
+	gulp.src('src/*.js')
 		.pipe(plumber())
 		.pipe(babel())
 		.pipe(rename({suffix: '.min'}))
@@ -64,7 +64,7 @@ gulp.task('scripts', () => {
 gulp.task('server', () => (
 	bs.init({
 		watchOptions: {
-			ignored: 'app/**/*'
+			ignored: 'src/**/*'
 		},
 		files: ['dist/**/*'],
 		open: !!OPEN,
@@ -77,7 +77,7 @@ gulp.task('server', () => (
 		},
 		server: {
 			baseDir: [
-				'app',
+				'src',
 				'dist'
 			],
 			directory: false
@@ -87,14 +87,14 @@ gulp.task('server', () => (
 ));
 
 gulp.task('copy', () => {
-	gulp.src(['app/**/*.*', '!app/*.js', '!app/*.styl'])
+	gulp.src(['src/**/*.*', '!app/*.js', '!app/*.styl'])
 		.pipe(gulp.dest('dist'));
 });
 
 gulp.task('watch', () => { 
-	gulp.watch('app/*.html', () => runSequence('copy'));
-	gulp.watch('app/*.styl', () => runSequence('styles'));
-	gulp.watch('app/*.js', () => runSequence('scripts'));
+	gulp.watch('src/*.html', () => runSequence('copy'));
+	gulp.watch('src/*.styl', () => runSequence('styles'));
+	gulp.watch('src/*.js', () => runSequence('scripts'));
 });
 
 gulp.task('build', () => runSequence('styles', 'scripts'));

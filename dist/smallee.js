@@ -9,8 +9,6 @@
 })(typeof global !== 'undefined' ? global : window || this.window || this.global, function (root) {
 	'use strict';
 	
-	window.Smallee = Smallee || {};
-	
 	const defaultClasses = {
 		smallee: 'smallee',
 		inner: 'smallee-inner',
@@ -20,6 +18,14 @@
 		prevDisabled: 'smallee-prev_disabled',
 		nextDisabled: 'smallee-next_disabled'
 	};
+	const requestAnimationFrame = 
+		window.requestAnimationFrame || 
+		window.mozRequestAnimationFrame ||
+		window.webkitRequestAnimationFrame || 
+		window.msRequestAnimationFrame;
+	
+	window.requestAnimationFrame = requestAnimationFrame;
+	window.Smallee = Smallee || {};
 
 	function Smallee(object) {
 		const defaultSettings = {
@@ -47,7 +53,7 @@
 
 		[
 			'changeSlidesPosition',
-			'moveSlides',
+			'getDirectionToSlide',
 			'mouseDown',
 			'mouseUp',
 			'mouseMove',
@@ -183,11 +189,12 @@
 
 	Smallee.prototype.defineSmalleeWasTranslatedOn = function() {
 		const translate = this.inner.style.transform;
-		console.log('1');
 		return translate ? Number(translate.slice(translate.indexOf('(') + 1, translate.indexOf('p'))) : 0;
 	}
 
 	Smallee.prototype.changeSlidesPosition = function(direction) {
+		const _this = this;
+		let frame;
 		let nextStep;
 		switch (direction) {
 			case 'next':
@@ -202,25 +209,30 @@
 		}
 		switch (this.settings.effect) {
 			case 'fade':
-				const _this = this;
 				this.slides.forEach(item => {
 					item.style.opacity = 0;
 				});
 				const timer = setTimeout(function(){
-					_this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
-					_this.slides.forEach(item => {
-						item.style.opacity = 1;
+					frame = requestAnimationFrame(function () {
+						_this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
+						_this.slides.forEach(item => {
+							item.style.opacity = 1;
+						});
+						_this.sliderCoords.wasMovedOn = _this.defineSmalleeWasTranslatedOn();
+						_this.setControlsState();
+						window.cancelAnimationFrame(frame);
 					});
-					_this.sliderCoords.wasMovedOn = _this.defineSmalleeWasTranslatedOn();
-					_this.setControlsState();
 					clearInterval(timer);
 				}, this.settings.delay);
 				break;
 			default:
-				this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
-				this.sliderCoords.wasMovedOn = this.defineSmalleeWasTranslatedOn();
-				this.restoreTransition();
-				this.setControlsState();
+				frame = requestAnimationFrame(function () {
+					_this.inner.style.transform = `translate3d(${nextStep}px, 0, 0)`;
+					_this.sliderCoords.wasMovedOn = _this.defineSmalleeWasTranslatedOn();
+					_this.restoreTransition();
+					_this.setControlsState();
+					window.cancelAnimationFrame(frame);
+				});
 		}
 	}
 
@@ -232,7 +244,7 @@
 		this.inner.style.transition = this.settings.transition;
 	}
 
-	Smallee.prototype.moveSlides = function() {
+	Smallee.prototype.getDirectionToSlide = function() {
 		if (event.target.closest(`.${defaultClasses.next}`)) {
 			this.changeSlidesPosition('next');
 		}
@@ -242,7 +254,7 @@
 	}
 
 	Smallee.prototype.initClickEvents = function(event) {
-		this.selector.addEventListener('click', this.moveSlides);
+		this.selector.addEventListener('click', this.getDirectionToSlide);
 	}
 
 	Smallee.prototype.mouseDown = function(event) {
