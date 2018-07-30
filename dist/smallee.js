@@ -21,10 +21,11 @@
   };
 
   const defaultSettings = {
-    arrows: false,
+    controls: false,
     delay: 300,
     easeFunc: 'ease-in-out', // can be any transition function
     effect: 'default', // also 'fade' is available
+    loop: false,
     responsive: false,
     slidesToScroll: 1,
     slidesToShow: 1,
@@ -53,20 +54,7 @@
     this.settings = mergeSettings(defaultSettings, settings);
     this.settings.transition = `${this.settings.easeFunc} ${this.settings.delay}ms`;
 
-    [
-      'changeSlidesPosition',
-      'getDirectionToSlide',
-      'mouseDown',
-      'mouseUp',
-      'mouseMove',
-      'mouseLeave',
-      'preventDragStart',
-      'doOnResize'
-    ].forEach(method => {
-      this[method] = this[method].bind(this);
-    });
-
-    this.init();
+    init(this);
   }
 
   function prevDefAndStopProp(event) {
@@ -78,143 +66,210 @@
     return Object.assign({}, defaultSettings, userSettings);
   }
 
-  Smallee.prototype.init = function() {
+  const init = function(instance) {
     const fragment = document.createDocumentFragment();
-    this.sliderCoords = {
+    instance.sliderCoords = {
       start: null,
       wasMovedOn: 0
     };
 
-    this.selector.classList.add(classes.smallee);
+    instance.selector.classList.add(classes.smallee);
 
-    this.inner = document.createElement('DIV');
-    this.inner.classList.add(classes.inner);
+    instance.inner = document.createElement('DIV');
+    instance.inner.classList.add(classes.inner);
 
-    this.track = document.createElement('DIV');
-    this.track.classList.add(classes.track);
-    this.slides.forEach((item, i) => {
+    instance.track = document.createElement('DIV');
+    instance.track.classList.add(classes.track);
+    instance.slides.forEach((item, i) => {
       item.setAttribute('data-index', i);
-      this.track.appendChild(item);
+      instance.track.appendChild(item);
     });
 
-    this.inner.appendChild(this.track);
+    instance.inner.appendChild(instance.track);
 
-    fragment.appendChild(this.inner);
+    fragment.appendChild(instance.inner);
 
-    this.selector.appendChild(fragment);
-    this.setStylesToTheElements();
-    this.stepRange = (this.selector.clientWidth / this.settings.slidesToShow) * this.settings.slidesToScroll;
-    this.scrollLimit = -(
-      (this.numberOfSlides - this.settings.slidesToShow) *
-      (this.stepRange / this.settings.slidesToScroll)
+    instance.selector.appendChild(fragment);
+    setDimensions(instance);
+    instance.stepRange =
+      (instance.selector.clientWidth / instance.settings.slidesToShow) * instance.settings.slidesToScroll;
+    instance.scrollLimit = -(
+      (instance.numberOfSlides - instance.settings.slidesToShow) *
+      (instance.stepRange / instance.settings.slidesToScroll)
     );
 
-    if (this.settings.arrows) {
-      this.();
+    if (instance.settings.arrows) {
+      setArrows(instance);
     }
-    if (this.settings.swipeable) {
-      this.isDown = false;
-      this.initSwipeEvents();
+    if (instance.settings.swipeable) {
+      instance.isDown = false;
+      initSwipeEvents(instance);
     }
     // if (this.settings.responsive) {
     //   this.resizeHandler();
     // }
   };
 
-  Smallee.prototype.doOnResize = function(mediaQueryList) {
-    if (mediaQueryList.matches) {
-      const sliderWidth = this.selector.clientWidth;
-      this.stepRange =
-        (this.selector.clientWidth /
-          this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow) *
-        this.settings.slidesToScroll;
-      this.scrollLimit = -(
-        (this.numberOfSlides - this.settings.slidesToShow) *
-        (this.stepRange / this.settings.slidesToScroll)
-      );
-      this.track.style.width = `${(sliderWidth * this.numberOfSlides) /
-        this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow}px`;
-      this.slides.forEach(item => {
-        item.style.width = `${sliderWidth /
-          this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow}px`;
-      });
-    }
-  };
+  const setDimensions = function(instance) {
+    const sliderWidth = instance.selector.clientWidth;
 
-  Smallee.prototype.resizeHandler = function() {
-    const mql = {};
-    for (const breakpoint in this.settings.responsive) {
-      mql[breakpoint] = window.matchMedia(`(max-width: ${breakpoint}px)`);
-      mql[breakpoint].addListener(this.doOnResize);
-    }
-  };
-
-  Smallee.prototype.setStylesToTheElements = function() {
-    const sliderWidth = this.selector.clientWidth;
-
-    this.track.style.width = `${(sliderWidth * this.numberOfSlides) / this.settings.slidesToShow}px`;
-    switch (this.settings.effect) {
+    instance.track.style.width = `${(sliderWidth * instance.numberOfSlides) / instance.settings.slidesToShow}px`;
+    switch (instance.settings.effect) {
       case 'fade':
-        this.slides.forEach(slide => {
-          slide.style.transition = this.settings.transition;
+        instance.slides.forEach(slide => {
+          slide.style.transition = instance.settings.transition;
         });
         break;
       default:
-        this.track.style.transition = this.settings.transition;
+        instance.track.style.transition = instance.settings.transition;
     }
 
-    this.slides.forEach(item => {
+    instance.slides.forEach(item => {
       item.style.float = 'left';
-      item.style.width = `${sliderWidth / this.settings.slidesToShow}px`;
+      item.style.width = `${sliderWidth / instance.settings.slidesToShow}px`;
     });
   };
 
-  Smallee.prototype. = function() {
-    this.prev = document.createElement('BUTTON');
-    this.prev.type = 'button';
-    this.prev.classList.add(classes.prev);
+  const setArrows = function(instance) {
+    instance.prev = document.createElement('BUTTON');
+    instance.prev.type = 'button';
+    instance.prev.classList.add(classes.prev);
 
-    this.next = document.createElement('BUTTON');
-    this.next.type = 'button';
-    this.next.classList.add(classes.next);
+    instance.next = document.createElement('BUTTON');
+    instance.next.type = 'button';
+    instance.next.classList.add(classes.next);
 
-    this.selector.appendChild(this.prev);
-    this.selector.appendChild(this.next);
+    instance.selector.appendChild(instance.prev);
+    instance.selector.appendChild(instance.next);
 
-    this.initClickEvents();
-    this.setArrowsState();
+    initClickEvents(instance);
+    setArrowsState(instance);
   };
 
-  Smallee.prototype.setArrowsState = function() {
-    if (!this.settings.arrows) return;
-    if (this.sliderCoords.wasMovedOn === this.scrollLimit) {
-      this.next.classList.add(classes.nextDisabled);
+  const setArrowsState = function(instance) {
+    if (!instance.settings.arrows || instance.settings.loop) return;
+    if (instance.sliderCoords.wasMovedOn === instance.scrollLimit) {
+      instance.next.classList.add(classes.nextDisabled);
     } else {
-      this.next.classList.remove(classes.nextDisabled);
+      instance.next.classList.remove(classes.nextDisabled);
     }
 
-    if (this.sliderCoords.wasMovedOn === 0) {
-      this.prev.classList.add(classes.prevDisabled);
+    if (instance.sliderCoords.wasMovedOn === 0) {
+      instance.prev.classList.add(classes.prevDisabled);
     } else {
-      this.prev.classList.remove(classes.prevDisabled);
+      instance.prev.classList.remove(classes.prevDisabled);
     }
   };
 
-  Smallee.prototype.defineSmalleeWasTranslatedOn = function() {
-    const translate = this.track.style.transform;
+  const defineSmalleeWasTranslatedOn = function(instance) {
+    const translate = instance.track.style.transform;
     return translate ? Number(translate.slice(translate.indexOf('(') + 1, translate.indexOf('p'))) : 0;
   };
 
-  Smallee.prototype.changeSlidesPosition = function(direction) {
+  const clearTransition = function(instance) {
+    instance.track.style.transition = '0s';
+  };
+
+  const restoreTransition = function(instance) {
+    instance.track.style.transition = instance.settings.transition;
+  };
+
+  const getDirection = function() {
+    if (event.target.closest(`.${classes.next}`)) {
+      this.changeSlide('next');
+    }
+    if (event.target.closest(`.${classes.prev}`)) {
+      this.changeSlide('prev');
+    }
+  };
+
+  const initClickEvents = function(instance) {
+    const bindGetDirection = getDirection.bind(instance);
+    instance.selector.addEventListener('click', bindGetDirection);
+  };
+
+  const mouseDown = function(event) {
+    this.isDown = true;
+    this.sliderCoords.start = event.clientX;
+    clearTransition(this);
+  };
+
+  const mouseUp = function() {
+    this.isDown = false;
+    if (event.clientX - this.sliderCoords.start < -this.settings.threshold) {
+      this.changeSlide('next');
+      return;
+    }
+    if (event.clientX - this.sliderCoords.start > this.settings.threshold) {
+      this.changeSlide('prev');
+      return;
+    }
+    restoreTransition(this);
+    this.track.style.transform = `translate3d(${this.sliderCoords.wasMovedOn}px, 0, 0)`;
+  };
+
+  const mouseMove = function(event) {
+    if (this.isDown && this.settings.effect !== 'fade') {
+      this.track.style.transform = `translate3d(${this.sliderCoords.wasMovedOn +
+        event.clientX -
+        this.sliderCoords.start}px, 0, 0)`;
+    }
+  };
+
+  const mouseLeave = function() {
+    if (this.isDown) {
+      this.isDown = false;
+      restoreTransition(this);
+      if (event.clientX - this.sliderCoords.start < -this.settings.threshold) {
+        this.changeSlide('next');
+        return;
+      }
+      if (event.clientX - this.sliderCoords.start > this.settings.threshold) {
+        this.changeSlide('prev');
+        return;
+      }
+      this.track.style.transform = `translate3d(${this.sliderCoords.wasMovedOn}px, 0, 0)`;
+    }
+  };
+
+  const preventDragStart = function(event) {
+    prevDefAndStopProp(event);
+  };
+
+  const initSwipeEvents = function(instance) {
+    const bindMouseDown = mouseDown.bind(instance);
+    const bindMouseUp = mouseUp.bind(instance);
+    const bindMouseMove = mouseMove.bind(instance);
+    const bindMouseLeave = mouseLeave.bind(instance);
+    const bindPreventDragStart = preventDragStart.bind(instance);
+
+    instance.track.addEventListener('mousedown', bindMouseDown);
+    instance.track.addEventListener('mouseup', bindMouseUp);
+    instance.track.addEventListener('mousemove', bindMouseMove);
+    instance.track.addEventListener('mouseleave', bindMouseLeave);
+    instance.track.addEventListener('dragstart', bindPreventDragStart);
+  };
+
+  Smallee.prototype.changeSlide = function(direction) {
     const _this = this;
     let frame;
     let nextStep;
+
     switch (direction) {
       case 'next':
-        nextStep =
-          this.sliderCoords.wasMovedOn - this.stepRange >= this.scrollLimit
-            ? this.sliderCoords.wasMovedOn - this.stepRange
-            : this.scrollLimit;
+        console.log(this.sliderCoords.wasMovedOn, this.stepRange, this.scrollLimit);
+        // let nextStep;
+        if (this.sliderCoords.wasMovedOn - this.stepRange >= this.scrollLimit) {
+          nextStep = this.sliderCoords.wasMovedOn - this.stepRange;
+        } else {
+          nextStep = this.scrollLimit;
+        }
+        if (this.sliderCoords.wasMovedOn === this.scrollLimit) {
+          nextStep = 0;
+        }
+        // this.sliderCoords.wasMovedOn - this.stepRange >= this.scrollLimit
+        //   ? this.sliderCoords.wasMovedOn - this.stepRange
+        //   : this.scrollLimit;
         break;
       case 'prev':
         nextStep =
@@ -223,19 +278,21 @@
       default:
         return;
     }
+
     switch (this.settings.effect) {
       case 'fade':
         this.slides.forEach(item => {
           item.style.opacity = 0;
         });
+
         const timer = setTimeout(function() {
           frame = requestAnimationFrame(function() {
             _this.track.style.transform = `translate3d(${nextStep}px, 0, 0)`;
             _this.slides.forEach(item => {
               item.style.opacity = 1;
             });
-            _this.sliderCoords.wasMovedOn = _this.defineSmalleeWasTranslatedOn();
-            _this.setArrowsState();
+            _this.sliderCoords.wasMovedOn = defineSmalleeWasTranslatedOn(_this);
+            setArrowsState(_this);
             window.cancelAnimationFrame(frame);
           });
           clearInterval(timer);
@@ -244,89 +301,50 @@
       default:
         frame = requestAnimationFrame(function() {
           _this.track.style.transform = `translate3d(${nextStep}px, 0, 0)`;
-          _this.sliderCoords.wasMovedOn = _this.defineSmalleeWasTranslatedOn();
-          _this.restoreTransition();
-          _this.setArrowsState();
+          _this.sliderCoords.wasMovedOn = defineSmalleeWasTranslatedOn(_this);
+          restoreTransition(_this);
+          setArrowsState(_this);
           window.cancelAnimationFrame(frame);
         });
     }
   };
 
-  Smallee.prototype.clearTransition = function() {
-    this.track.style.transition = '0s';
-  };
+  Smallee.prototype.doOnResize = function(mediaQueryList) {
+    /* TODO */
+    if (mediaQueryList.matches) {
+      const sliderWidth = this.selector.clientWidth;
 
-  Smallee.prototype.restoreTransition = function() {
-    this.track.style.transition = this.settings.transition;
-  };
+      this.stepRange =
+        (this.selector.clientWidth /
+          this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow) *
+        this.settings.slidesToScroll;
 
-  Smallee.prototype.getDirectionToSlide = function() {
-    if (event.target.closest(`.${classes.next}`)) {
-      this.changeSlidesPosition('next');
-    }
-    if (event.target.closest(`.${classes.prev}`)) {
-      this.changeSlidesPosition('prev');
-    }
-  };
+      this.scrollLimit = -(
+        (this.numberOfSlides - this.settings.slidesToShow) *
+        (this.stepRange / this.settings.slidesToScroll)
+      );
 
-  Smallee.prototype.initClickEvents = function(event) {
-    this.selector.addEventListener('click', this.getDirectionToSlide);
-  };
+      this.track.style.width = `${(sliderWidth * this.numberOfSlides) /
+        this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow}px`;
 
-  Smallee.prototype.mouseDown = function(event) {
-    this.isDown = true;
-    this.sliderCoords.start = event.clientX;
-    this.clearTransition();
-  };
-
-  Smallee.prototype.mouseUp = function() {
-    this.isDown = false;
-    if (event.clientX - this.sliderCoords.start < -this.settings.threshold) {
-      this.changeSlidesPosition('next');
-      return;
-    }
-    if (event.clientX - this.sliderCoords.start > this.settings.threshold) {
-      this.changeSlidesPosition('prev');
-      return;
-    }
-    this.restoreTransition();
-    this.track.style.transform = `translate3d(${this.sliderCoords.wasMovedOn}px, 0, 0)`;
-  };
-
-  Smallee.prototype.mouseMove = function(event) {
-    if (this.isDown && this.settings.effect !== 'fade') {
-      this.track.style.transform = `translate3d(${this.sliderCoords.wasMovedOn +
-        event.clientX -
-        this.sliderCoords.start}px, 0, 0)`;
+      this.slides.forEach(item => {
+        item.style.width = `${sliderWidth /
+          this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow}px`;
+      });
     }
   };
 
-  Smallee.prototype.mouseLeave = function() {
-    if (this.isDown) {
-      this.isDown = false;
-      this.restoreTransition();
-      if (event.clientX - this.sliderCoords.start < -this.settings.threshold) {
-        this.changeSlidesPosition('next');
-        return;
-      }
-      if (event.clientX - this.sliderCoords.start > this.settings.threshold) {
-        this.changeSlidesPosition('prev');
-        return;
-      }
-      this.track.style.transform = `translate3d(${this.sliderCoords.wasMovedOn}px, 0, 0)`;
+  Smallee.prototype.resizeHandler = function() {
+    /* TODO */
+    const mql = {};
+    for (const breakpoint in this.settings.responsive) {
+      mql[breakpoint] = window.matchMedia(`(max-width: ${breakpoint}px)`);
+      mql[breakpoint].addListener(this.doOnResize);
     }
   };
 
-  Smallee.prototype.preventDragStart = function(event) {
-    prevDefAndStopProp(event);
-  };
-
-  Smallee.prototype.initSwipeEvents = function() {
-    this.track.addEventListener('mousedown', this.mouseDown);
-    this.track.addEventListener('mouseup', this.mouseUp);
-    this.track.addEventListener('mousemove', this.mouseMove);
-    this.track.addEventListener('mouseleave', this.mouseLeave);
-    this.track.addEventListener('dragstart', this.preventDragStart);
+  Smallee.prototype.onSlideChange = function() {
+    /* TODO */
   };
 
   return Smallee;

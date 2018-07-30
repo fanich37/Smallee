@@ -270,7 +270,8 @@
     </div>
     <script src="smallee.min.js"></script>
     <script>
-        new Smallee({
+        var smallee = new Smallee({
+            loop: true,
             selector: '#test',
             slidesToShow: 3,
             slidesToScroll: 2,
@@ -290,7 +291,8 @@
             slidesToShow: 2,
             effect: 'fade',
             arrows: true,
-            swipeable: true
+            swipeable: true,
+            delay: 700
         });
     </script>
 </body>
