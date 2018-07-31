@@ -39,7 +39,10 @@
     window.webkitRequestAnimationFrame ||
     window.msRequestAnimationFrame;
 
+  const cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+
   window.requestAnimationFrame = requestAnimationFrame;
+  window.cancelAnimationFrame = cancelAnimationFrame;
   window.Smallee = Smallee || {};
 
   function Smallee(settings) {
@@ -126,7 +129,7 @@
 
     instance.slides.forEach(item => {
       item.style.float = 'left';
-      item.style.width = `${sliderWidth / instance.settings.slidesToShow}px`;
+      item.style.width = `${100 / instance.slides.length}%`;
     });
   };
 
@@ -257,23 +260,26 @@
 
     switch (direction) {
       case 'next':
-        console.log(this.sliderCoords.wasMovedOn, this.stepRange, this.scrollLimit);
-        // let nextStep;
         if (this.sliderCoords.wasMovedOn - this.stepRange >= this.scrollLimit) {
           nextStep = this.sliderCoords.wasMovedOn - this.stepRange;
-        } else {
+        }
+        if (this.sliderCoords.wasMovedOn - this.stepRange < this.scrollLimit) {
           nextStep = this.scrollLimit;
         }
-        if (this.sliderCoords.wasMovedOn === this.scrollLimit) {
+        if (this.settings.loop && this.sliderCoords.wasMovedOn === this.scrollLimit) {
           nextStep = 0;
         }
-        // this.sliderCoords.wasMovedOn - this.stepRange >= this.scrollLimit
-        //   ? this.sliderCoords.wasMovedOn - this.stepRange
-        //   : this.scrollLimit;
         break;
       case 'prev':
-        nextStep =
-          this.sliderCoords.wasMovedOn + this.stepRange > 0 ? 0 : this.sliderCoords.wasMovedOn + this.stepRange;
+        if (this.sliderCoords.wasMovedOn + this.stepRange > 0) {
+          nextStep = 0;
+        }
+        if (this.sliderCoords.wasMovedOn + this.stepRange <= 0) {
+          nextStep = this.sliderCoords.wasMovedOn + this.stepRange;
+        }
+        if (this.settings.loop && this.sliderCoords.wasMovedOn === 0) {
+          nextStep = this.scrollLimit;
+        }
         break;
       default:
         return;
@@ -293,7 +299,7 @@
             });
             _this.sliderCoords.wasMovedOn = defineSmalleeWasTranslatedOn(_this);
             setArrowsState(_this);
-            window.cancelAnimationFrame(frame);
+            cancelAnimationFrame(frame);
           });
           clearInterval(timer);
         }, this.settings.delay);
@@ -304,7 +310,7 @@
           _this.sliderCoords.wasMovedOn = defineSmalleeWasTranslatedOn(_this);
           restoreTransition(_this);
           setArrowsState(_this);
-          window.cancelAnimationFrame(frame);
+          cancelAnimationFrame(frame);
         });
     }
   };

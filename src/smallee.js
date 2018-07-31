@@ -129,7 +129,7 @@
 
     instance.slides.forEach(item => {
       item.style.float = 'left';
-      item.style.width = `${sliderWidth / instance.settings.slidesToShow}px`;
+      item.style.width = `${100 / instance.slides.length}%`;
     });
   };
 
