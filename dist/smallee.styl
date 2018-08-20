@@ -1,80 +1,80 @@
 *
-	box-sizing border-box
+  box-sizing border-box
 
 .smallee
-	position relative
-	display block
+  position relative
+  display block
 
-	&-inner
-		position relative
-		overflow hidden
+  &-inner
+    position relative
+    overflow hidden
 
-	&-track 
-		user-select none
+  &-track 
+    user-select none
 
-		&:after
-			content ''
-			display table
-			width 0
-			clear both
+    &:after
+      content ''
+      display table
+      width 0
+      clear both
 
-	&-next,
-	&-prev
-		position absolute
-		z-index 1
-		top 30%
-		padding 10px
-		display inline-block
-		width 50px
-		height 50px 
-		background-color #fff
-		border none
-		border-radius 50%
-		box-shadow 0 2px 2px 2px rgba(0, 0, 0, .5)
-		transition time-s
-		cursor pointer
+  &-next,
+  &-prev
+    position absolute
+    z-index 1
+    top 30%
+    padding 10px
+    display inline-block
+    width 50px
+    height 50px 
+    background-color #fff
+    border none
+    border-radius 50%
+    box-shadow 0 2px 2px 2px rgba(0, 0, 0, .5)
+    transition time-s
+    cursor pointer
 
-	&_disabled
-		opacity .5
-		cursor default
+  &_disabled
+    opacity .5
+    cursor default
 
-	&-next
-		right 30px
+  &-next
+    right 30px
 
-		&_disabled
-			display none
+    &_disabled
+      display none
 
-	&-prev
-		left 30px
+  &-prev
+    left 30px
 
-		&_disabled
-			display none
+    &_disabled
+      display none
 
-	&-next,
-	&-prev
-		&:before,
-		&:after
-			content ''
-			top 15px
-			left 10px
-			margin 0 auto
-			display block
-			width 25px
-			height 4px
-			background-color black
+  &-next,
+  &-prev
+    &:before,
+    &:after
+      content ''
+      top 15px
+      left 10px
+      margin 0 auto
+      display block
+      width 25px
+      height 4px
+      background-color black
 
-	&-next
-		&:before
-			transform rotate(45deg) translate3d(0, 4px, 0)
-			transform-origin bottom right
-		&:after
-			transform rotate(-45deg) translate3d(0, -4px, 0)
-			transform-origin top right
+  &-next
+    &:before
+      transform rotate(45deg) translate3d(0, 4px, 0)
+      transform-origin bottom right
+    &:after
+      transform rotate(-45deg) translate3d(0, -4px, 0)
+      transform-origin top right
 
-	&-prev
-		&:before
-			transform rotate(-45deg) translate3d(0, 4px, 0)
-			transform-origin bottom left
-		&:after
-			transform rotate(45deg) translate3d(0, -4px, 0)
-			transform-origin top left
+  &-prev
+    &:before
+      transform rotate(-45deg) translate3d(0, 4px, 0)
+      transform-origin bottom left
+    &:after
+      transform rotate(45deg) translate3d(0, -4px, 0)
+      transform-origin top left

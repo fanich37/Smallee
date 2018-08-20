@@ -1,8 +1,6 @@
 const gulp = require('gulp');
 const runSequence = require('run-sequence');
 const gulpIf = require('gulp-if');
-const watch = require('gulp-watch');
-const copy = require('gulp-copy');
 const rename = require('gulp-rename');
 const babel = require('gulp-babel');
 const plumber = require('gulp-plumber');
@@ -16,7 +14,7 @@ const flexfixes = require('postcss-flexbugs-fixes');
 const nano = require('gulp-cssnano');
 
 const isDebug = process.env.NODE_ENV !== 'production';
-const { PORT, OPEN, NODE_ENV, TUNNEL } = process.env;
+const { PORT, OPEN, TUNNEL } = process.env;
 const browsers = require('./package.json')['browsers'];
 
 gulp.task('default', () => runSequence('copy', 'styles', 'scripts', 'server', 'watch'));
@@ -49,9 +47,9 @@ gulp.task('scripts', () => {
   gulp
     .src('src/*.js')
     .pipe(plumber())
-    .pipe(babel())
+    .pipe(babel({ presets: ['env'] }))
     .pipe(rename({ suffix: '.min' }))
-    .pipe(uglify())
+    .pipe(gulpIf(!isDebug, uglify()))
     .pipe(gulp.dest('dist'));
 });
 

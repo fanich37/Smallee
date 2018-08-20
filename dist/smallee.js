@@ -9,11 +9,34 @@
 })(typeof global !== 'undefined' ? global : window || this.window || this.global, function(root) {
   'use strict';
 
+  /**
+   * Closest method polyfill
+   */
+  (function(element) {
+    element.matches =
+      element.matches ||
+      element.mozMatchesSelector ||
+      element.msMatchesSelector ||
+      element.oMatchesSelector ||
+      element.webkitMatchesSelector;
+    element.closest =
+      element.closest ||
+      function closest(selector) {
+        if (!this) return null;
+        if (this.matches(selector)) return this;
+        if (!this.parentElement) {
+          return null;
+        } else return this.parentElement.closest(selector);
+      };
+  })(Element.prototype);
+
   const classes = {
     smallee: 'smallee',
     inner: 'smallee-inner',
     track: 'smallee-track',
     slide: 'smallee-slide',
+    slideFade: 'smallee-slide_fade',
+    slideActive: 'smallee-slide_active',
     prev: 'smallee-prev',
     next: 'smallee-next',
     prevDisabled: 'smallee-prev_disabled',
@@ -24,8 +47,9 @@
     controls: false,
     delay: 300,
     easeFunc: 'ease-in-out', // can be any transition function
-    effect: 'default', // also 'fade' is available
+    effect: 'slide',
     loop: false,
+    resizeTimeout: 1000,
     responsive: false,
     slidesToScroll: 1,
     slidesToShow: 1,
@@ -52,12 +76,12 @@
     }
 
     this.selector = document.querySelector(settings.selector);
-    this.slides = Array.from(this.selector.children);
+    this.slides = Array.prototype.slice.call(this.selector.children);
     this.numberOfSlides = this.slides.length;
     this.settings = mergeSettings(defaultSettings, settings);
     this.settings.transition = `${this.settings.easeFunc} ${this.settings.delay}ms`;
 
-    init(this);
+    init.call(this);
   }
 
   function prevDefAndStopProp(event) {
@@ -66,115 +90,114 @@
   }
 
   function mergeSettings(defaultSettings, userSettings) {
-    return Object.assign({}, defaultSettings, userSettings);
+    for (let key in defaultSettings) {
+      if (!userSettings[key]) {
+        userSettings[key] = defaultSettings[key];
+      }
+    }
+    return userSettings;
   }
 
-  const init = function(instance) {
-    const fragment = document.createDocumentFragment();
-    instance.sliderCoords = {
+  const init = function() {
+    const fragment = build.call(this, this.settings.effect);
+    this.sliderCoords = {
       start: null,
       wasMovedOn: 0
     };
 
-    instance.selector.classList.add(classes.smallee);
-
-    instance.inner = document.createElement('DIV');
-    instance.inner.classList.add(classes.inner);
-
-    instance.track = document.createElement('DIV');
-    instance.track.classList.add(classes.track);
-    instance.slides.forEach((item, i) => {
-      item.setAttribute('data-index', i);
-      instance.track.appendChild(item);
-    });
-
-    instance.inner.appendChild(instance.track);
-
-    fragment.appendChild(instance.inner);
-
-    instance.selector.appendChild(fragment);
-    setDimensions(instance);
-    instance.stepRange =
-      (instance.selector.clientWidth / instance.settings.slidesToShow) * instance.settings.slidesToScroll;
-    instance.scrollLimit = -(
-      (instance.numberOfSlides - instance.settings.slidesToShow) *
-      (instance.stepRange / instance.settings.slidesToScroll)
+    this.selector.appendChild(fragment);
+    setDimensions.call(this);
+    this.stepRange = (this.selector.clientWidth / this.settings.slidesToShow) * this.settings.slidesToScroll;
+    this.scrollLimit = -(
+      (this.numberOfSlides - this.settings.slidesToShow) *
+      (this.stepRange / this.settings.slidesToScroll)
     );
 
-    if (instance.settings.arrows) {
-      setArrows(instance);
-    }
-    if (instance.settings.swipeable) {
-      instance.isDown = false;
-      initSwipeEvents(instance);
-    }
-    // if (this.settings.responsive) {
-    //   this.resizeHandler();
-    // }
+    this.settings.arrows && setArrows.call(this);
+    this.settings.swipeable && initSwipeEvents.call(this);
+    this.settings.responsive && resizeHandler.call(this);
   };
 
-  const setDimensions = function(instance) {
-    const sliderWidth = instance.selector.clientWidth;
+  const build = function(effectType) {
+    const fragment = document.createDocumentFragment();
+    this.selector.classList.add(classes.smallee);
+    this.inner = document.createElement('DIV');
+    this.inner.classList.add(classes.inner);
 
-    instance.track.style.width = `${(sliderWidth * instance.numberOfSlides) / instance.settings.slidesToShow}px`;
-    switch (instance.settings.effect) {
-      case 'fade':
-        instance.slides.forEach(slide => {
-          slide.style.transition = instance.settings.transition;
-        });
-        break;
+    switch (effectType) {
+      case 'slide':
       default:
-        instance.track.style.transition = instance.settings.transition;
+        this.track = document.createElement('DIV');
+        this.track.classList.add(classes.track);
+        this.slides.forEach((item, i) => {
+          item.setAttribute('data-index', i);
+          item.classList.add(classes.slide);
+          this.track.appendChild(item);
+        });
+        this.inner.appendChild(this.track);
+        break;
     }
 
-    instance.slides.forEach(item => {
-      item.style.float = 'left';
-      item.style.width = `${100 / instance.slides.length}%`;
-    });
+    fragment.appendChild(this.inner);
+    return fragment;
   };
 
-  const setArrows = function(instance) {
-    instance.prev = document.createElement('BUTTON');
-    instance.prev.type = 'button';
-    instance.prev.classList.add(classes.prev);
-
-    instance.next = document.createElement('BUTTON');
-    instance.next.type = 'button';
-    instance.next.classList.add(classes.next);
-
-    instance.selector.appendChild(instance.prev);
-    instance.selector.appendChild(instance.next);
-
-    initClickEvents(instance);
-    setArrowsState(instance);
+  const setDimensions = function() {
+    switch (this.settings.effect) {
+      case 'slide':
+      default:
+        const sliderWidth = this.selector.clientWidth;
+        this.track.style.width = `${(sliderWidth * this.numberOfSlides) / this.settings.slidesToShow}px`;
+        this.track.style.transition = this.settings.transition;
+        this.slides.forEach(item => {
+          item.style.float = 'left';
+          item.style.width = `${100 / this.slides.length}%`;
+        });
+    }
   };
 
-  const setArrowsState = function(instance) {
-    if (!instance.settings.arrows || instance.settings.loop) return;
-    if (instance.sliderCoords.wasMovedOn === instance.scrollLimit) {
-      instance.next.classList.add(classes.nextDisabled);
+  const setArrows = function() {
+    this.prev = document.createElement('BUTTON');
+    this.prev.type = 'button';
+    this.prev.classList.add(classes.prev);
+
+    this.next = document.createElement('BUTTON');
+    this.next.type = 'button';
+    this.next.classList.add(classes.next);
+
+    this.selector.appendChild(this.prev);
+    this.selector.appendChild(this.next);
+
+    initClickEvents.call(this);
+    setArrowsState.call(this);
+  };
+
+  const setArrowsState = function() {
+    if (!this.settings.arrows || this.settings.loop) return;
+    if (this.sliderCoords.wasMovedOn === this.scrollLimit) {
+      this.next.classList.add(classes.nextDisabled);
     } else {
-      instance.next.classList.remove(classes.nextDisabled);
+      this.next.classList.remove(classes.nextDisabled);
     }
 
-    if (instance.sliderCoords.wasMovedOn === 0) {
-      instance.prev.classList.add(classes.prevDisabled);
+    if (this.sliderCoords.wasMovedOn === 0) {
+      this.prev.classList.add(classes.prevDisabled);
     } else {
-      instance.prev.classList.remove(classes.prevDisabled);
+      this.prev.classList.remove(classes.prevDisabled);
     }
   };
 
-  const defineSmalleeWasTranslatedOn = function(instance) {
-    const translate = instance.track.style.transform;
+  const defineSmalleeWasTranslatedOn = function() {
+    const translate = this.track.style.transform;
     return translate ? Number(translate.slice(translate.indexOf('(') + 1, translate.indexOf('p'))) : 0;
   };
 
-  const clearTransition = function(instance) {
-    instance.track.style.transition = '0s';
+  const clearTransition = function() {
+    this.track.style.transition = '0s';
   };
 
-  const restoreTransition = function(instance) {
-    instance.track.style.transition = instance.settings.transition;
+  const restoreTransition = function() {
+    this.track.style.transition = this.settings.transition;
   };
 
   const getDirection = function() {
@@ -186,15 +209,15 @@
     }
   };
 
-  const initClickEvents = function(instance) {
-    const bindGetDirection = getDirection.bind(instance);
-    instance.selector.addEventListener('click', bindGetDirection);
+  const initClickEvents = function() {
+    const bindGetDirection = getDirection.bind(this);
+    this.selector.addEventListener('click', bindGetDirection);
   };
 
   const mouseDown = function(event) {
     this.isDown = true;
     this.sliderCoords.start = event.clientX;
-    clearTransition(this);
+    clearTransition.call(this);
   };
 
   const mouseUp = function() {
@@ -207,7 +230,7 @@
       this.changeSlide('prev');
       return;
     }
-    restoreTransition(this);
+    restoreTransition.call(this);
     this.track.style.transform = `translate3d(${this.sliderCoords.wasMovedOn}px, 0, 0)`;
   };
 
@@ -222,7 +245,7 @@
   const mouseLeave = function() {
     if (this.isDown) {
       this.isDown = false;
-      restoreTransition(this);
+      restoreTransition.call(this);
       if (event.clientX - this.sliderCoords.start < -this.settings.threshold) {
         this.changeSlide('next');
         return;
@@ -239,18 +262,35 @@
     prevDefAndStopProp(event);
   };
 
-  const initSwipeEvents = function(instance) {
-    const bindMouseDown = mouseDown.bind(instance);
-    const bindMouseUp = mouseUp.bind(instance);
-    const bindMouseMove = mouseMove.bind(instance);
-    const bindMouseLeave = mouseLeave.bind(instance);
-    const bindPreventDragStart = preventDragStart.bind(instance);
+  const initSwipeEvents = function() {
+    const bindMouseDown = mouseDown.bind(this);
+    const bindMouseUp = mouseUp.bind(this);
+    const bindMouseMove = mouseMove.bind(this);
+    const bindMouseLeave = mouseLeave.bind(this);
+    const bindPreventDragStart = preventDragStart.bind(this);
 
-    instance.track.addEventListener('mousedown', bindMouseDown);
-    instance.track.addEventListener('mouseup', bindMouseUp);
-    instance.track.addEventListener('mousemove', bindMouseMove);
-    instance.track.addEventListener('mouseleave', bindMouseLeave);
-    instance.track.addEventListener('dragstart', bindPreventDragStart);
+    this.selector.addEventListener('mousedown', bindMouseDown);
+    this.selector.addEventListener('mouseup', bindMouseUp);
+    this.selector.addEventListener('mousemove', bindMouseMove);
+    this.selector.addEventListener('mouseleave', bindMouseLeave);
+    this.selector.addEventListener('dragstart', bindPreventDragStart);
+  };
+
+  const resizeHandler = function() {
+    const _this = this;
+    this.resized = false;
+
+    window.addEventListener('resize', function() {
+      _this.resized = true;
+      const timer = setTimeout(() => {
+        if (_this.resized) {
+          clearTimeout(timer);
+          setDimensions.call(_this);
+          _this.track.style.transform = 'translate3d{0, 0, 0}';
+          _this.resized = false;
+        }
+      }, _this.settings.resizeTimeout);
+    });
   };
 
   Smallee.prototype.changeSlide = function(direction) {
@@ -286,70 +326,23 @@
     }
 
     switch (this.settings.effect) {
-      case 'fade':
-        this.slides.forEach(item => {
-          item.style.opacity = 0;
-        });
-
-        const timer = setTimeout(function() {
-          frame = requestAnimationFrame(function() {
-            _this.track.style.transform = `translate3d(${nextStep}px, 0, 0)`;
-            _this.slides.forEach(item => {
-              item.style.opacity = 1;
-            });
-            _this.sliderCoords.wasMovedOn = defineSmalleeWasTranslatedOn(_this);
-            setArrowsState(_this);
-            cancelAnimationFrame(frame);
-          });
-          clearInterval(timer);
-        }, this.settings.delay);
-        break;
+      case 'slide':
       default:
         frame = requestAnimationFrame(function() {
           _this.track.style.transform = `translate3d(${nextStep}px, 0, 0)`;
-          _this.sliderCoords.wasMovedOn = defineSmalleeWasTranslatedOn(_this);
-          restoreTransition(_this);
-          setArrowsState(_this);
+          _this.sliderCoords.wasMovedOn = defineSmalleeWasTranslatedOn.call(_this);
+          restoreTransition.call(_this);
+          setArrowsState.call(_this);
           cancelAnimationFrame(frame);
         });
     }
   };
 
-  Smallee.prototype.doOnResize = function(mediaQueryList) {
-    /* TODO */
-    if (mediaQueryList.matches) {
-      const sliderWidth = this.selector.clientWidth;
-
-      this.stepRange =
-        (this.selector.clientWidth /
-          this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow) *
-        this.settings.slidesToScroll;
-
-      this.scrollLimit = -(
-        (this.numberOfSlides - this.settings.slidesToShow) *
-        (this.stepRange / this.settings.slidesToScroll)
-      );
-
-      this.track.style.width = `${(sliderWidth * this.numberOfSlides) /
-        this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow}px`;
-
-      this.slides.forEach(item => {
-        item.style.width = `${sliderWidth /
-          this.settings.responsive[Number(mediaQueryList.media.match(/[0-9]/g).join(''))].slidesToShow}px`;
-      });
-    }
+  Smallee.prototype.onSlideChange = function(func) {
+    func();
   };
 
-  Smallee.prototype.resizeHandler = function() {
-    /* TODO */
-    const mql = {};
-    for (const breakpoint in this.settings.responsive) {
-      mql[breakpoint] = window.matchMedia(`(max-width: ${breakpoint}px)`);
-      mql[breakpoint].addListener(this.doOnResize);
-    }
-  };
-
-  Smallee.prototype.onSlideChange = function() {
+  Smallee.prototype.destroy = function() {
     /* TODO */
   };
 
