@@ -44,7 +44,7 @@
   };
 
   const defaultSettings = {
-    controls: false,
+    arrows: true,
     delay: 300,
     easeFunc: 'ease-in-out', // can be any transition function
     effect: 'slide',
@@ -176,7 +176,7 @@
     func();
   };
 
-  Smallee.prototype.destroy = function() {
+  Smallee.prototype.destroy = function(instance) {
     const slides = Array.prototype.slice.call(this.track.children);
 
     this.selector.classList.remove('smallee');
@@ -197,6 +197,13 @@
       item.style.removeProperty('width');
       this.selector.appendChild(item);
     });
+
+    if (instance) {
+      for (let key in instance) {
+        delete instance[key];
+      }
+      instance = null;
+    }
   };
 
   /**

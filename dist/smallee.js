@@ -44,7 +44,7 @@
   };
 
   const defaultSettings = {
-    controls: false,
+    arrows: true,
     delay: 300,
     easeFunc: 'ease-in-out', // can be any transition function
     effect: 'slide',
@@ -85,12 +85,12 @@
   }
 
   /**
-   * Public methods
+   * ----- Public methods -----
    */
   Smallee.prototype.init = function() {
     const fragment = build.call(this, this.settings.effect);
     this.selector.appendChild(fragment);
-    setDimensions.call(this);
+    setData.call(this);
 
     if (this.settings.arrows) {
       setArrows.call(this);
@@ -169,14 +169,14 @@
   };
 
   Smallee.prototype.refresh = function() {
-    setDimensions.call(this);
+    setData.call(this);
   };
 
   Smallee.prototype.onSlideChange = function(func) {
     func();
   };
 
-  Smallee.prototype.destroy = function() {
+  Smallee.prototype.destroy = function(instance) {
     const slides = Array.prototype.slice.call(this.track.children);
 
     this.selector.classList.remove('smallee');
@@ -197,8 +197,18 @@
       item.style.removeProperty('width');
       this.selector.appendChild(item);
     });
+
+    if (instance) {
+      for (let key in instance) {
+        delete instance[key];
+      }
+      instance = null;
+    }
   };
 
+  /**
+   * ----- Private methods and utils -----
+   */
   const prevDefAndStopProp = function(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -237,7 +247,7 @@
     return fragment;
   };
 
-  const setDimensions = function() {
+  const setData = function() {
     this.instanceData = {
       start: null,
       wasMovedOn: 0,
