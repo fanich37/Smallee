@@ -261,11 +261,12 @@
         arrows: true,
         swipeable: false
       });
+      console.log(smallee);
 
       var destroySmallee = document.getElementsByClassName('destroy')[0];
       destroySmallee.addEventListener('click', function () {
         smallee.destroy(smallee);
-      })
+      });
 
     // var smallee2 = new Smallee({
     //   selector: '.test2',

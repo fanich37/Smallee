@@ -176,7 +176,7 @@
     func();
   };
 
-  Smallee.prototype.destroy = function(instance) {
+  Smallee.prototype.destroy = function() {
     const slides = Array.prototype.slice.call(this.track.children);
 
     this.selector.classList.remove('smallee');
@@ -198,12 +198,7 @@
       this.selector.appendChild(item);
     });
 
-    if (instance) {
-      for (let key in instance) {
-        delete instance[key];
-      }
-      instance = null;
-    }
+    return null;
   };
 
   /**

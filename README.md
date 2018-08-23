@@ -67,9 +67,10 @@ mySlider.changeSlide('next');
 mySlider.refresh();
 ```
 
-**`destroy([instance])`** destroy the instance 😭. if this method is used w/o variable that contains Smallee instance it can be re-init later. otherwise it will be completely destroyed:
+**`destroy()`** destroy the instance 😭. this method returns `null`, so if you don't need to initialize it later it's possible to completely destroy the instance:
 
 ```js
-mySlider.destroy(); // can be re-init later
-mySlider.destroy(mySlider); // can't be re-init. mySlider is just a null it this case
+mySlider.destroy(); // can be re-inited later
+let mySlider2 = new Smallee({ selector: '.my-slider2' });
+mySlider2 = mySlider2.destroy(); // can't be re-inited. mySlider2 is just a null it this case
 ```
