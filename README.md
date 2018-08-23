@@ -35,6 +35,7 @@ There are several options you could use
 | `easeFunc`       | `String`            | `'ease-in-out'` | can be any transition function                                                                                                      |
 | `effect`         | `String`            | `'slide'`       | how to change slides. as for now (22.08.2018) `slide` is the only option. `fade` is in progress                                     |
 | `loop`           | `Boolean`           | `false`         | set the instance into infinite mode                                                                                                 |
+| `onChange`       | `Function`          | `false`         | the callback function that is called after the slide is changed                                                                                                 |
 | `resizeTimeout`  | `Number`            | `1000`          | how often refresh the instance dimensions when the viewport dimensions is changed. only matters with responsive mode is set to true |
 | `responsive`     | `Boolean`           | `true`          | as for now (22.08.2018) it only updates the instance dimensions                                                                     |
 | `slidesToScroll` | `Number`            | `1`             | how many slides to scroll at once                                                                                                   |
