@@ -49,6 +49,7 @@
     easeFunc: 'ease-in-out', // can be any transition function
     effect: 'slide',
     loop: false,
+    onChange: false,
     resizeTimeout: 1000,
     responsive: true,
     slidesToScroll: 1,
@@ -93,8 +94,8 @@
     setData.call(this);
 
     if (this.settings.arrows) {
-      setArrows.call(this);
       this.bindGetDirection = getDirection.bind(this);
+      setArrows.call(this);
       initClickEvents.call(this);
     }
 
@@ -162,6 +163,14 @@
           _this.track.style.transform = `translate3d(${nextStep}px, 0, 0)`;
           _this.instanceData.wasMovedOn = defineSmalleeWasTranslatedOn.call(_this);
           restoreTransition.call(_this);
+
+          if (_this.settings.onChange) {
+            const timer = setTimeout(() => {
+              clearTimeout(timer);
+              _this.onSlideChange(_this.settings.onChange);
+            }, _this.settings.delay);
+          }
+
           setArrowsState.call(_this);
           cancelAnimationFrame(frame);
         });
@@ -375,6 +384,17 @@
     }
   };
 
+  const resizeHandler = function() {
+    this.instanceData.resized = true;
+    const timer = setTimeout(() => {
+      if (this.instanceData.resized) {
+        clearTimeout(timer);
+        this.refresh();
+        this.instanceData.resized = false;
+      }
+    }, this.settings.resizeTimeout);
+  };
+
   const preventDragStart = function(event) {
     prevDefAndStopProp(event);
   };
@@ -412,17 +432,6 @@
 
   const removeResizeEvent = function() {
     window.removeEventListener('resize', this.bindResizeHandler);
-  };
-
-  const resizeHandler = function() {
-    this.instanceData.resized = true;
-    const timer = setTimeout(() => {
-      if (this.instanceData.resized) {
-        clearTimeout(timer);
-        this.refresh();
-        this.instanceData.resized = false;
-      }
-    }, this.settings.resizeTimeout);
   };
 
   return Smallee;

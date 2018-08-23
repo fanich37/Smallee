@@ -250,6 +250,7 @@
   </div> -->
     <div>
       <button type="button" class="destroy">Destroy!</button>
+      <button type="button" class="init">Init!</button>
     </div>
     <script src="smallee.min.js"></script>
     <script>
@@ -259,13 +260,19 @@
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: true,
-        swipeable: false
+        swipeable: true,
+        onChange: function () {
+          console.log('Changed');
+        }
       });
-      console.log(smallee);
 
       var destroySmallee = document.getElementsByClassName('destroy')[0];
+      var initSmallee = document.getElementsByClassName('init')[0];
       destroySmallee.addEventListener('click', function () {
-        smallee.destroy(smallee);
+        smallee.destroy();
+      });
+      initSmallee.addEventListener('click', function () {
+        smallee.init();
       });
 
     // var smallee2 = new Smallee({
