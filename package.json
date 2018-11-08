@@ -1,6 +1,6 @@
 {
   "name": "Smallee",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "The simple responsive slider with small functionality.",
   "main": "index.js",
   "scripts": {
